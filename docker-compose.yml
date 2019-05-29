@@ -134,3 +134,16 @@ services:
       - monitor-net
     labels:
       org.label-schema.group: "monitoring"
+
+  p4.helix:
+    build: p4.helix
+    hostname: p4.helix
+    container_name: p4.helix
+    # env_file:
+    #   - p4.env
+    ports:
+      - 4000:1999
+      - 3903:3903
+    networks:
+      - monitor-net
+    tty: true

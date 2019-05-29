@@ -1,0 +1,40 @@
+counter p4_log_line_count
+counter p4_cmds_completed_total
+
+counter p4_cmds_started_total by user, workspace
+# counter p4_cmds_completed by user, workspace
+# gauge   p4_cmd_lapse_time_total by user, workspace
+hidden gauge p4_cmds_start_time by pid
+
+/$/ {
+  p4_log_line_count++
+}
+
+# Perforce server info:
+#	2019/05/29 10:13:22 pid 86 rcowham@rcowham 192.168.96.1 [p4/2018.1/DARWIN90X86_64/1660568] 'user-info'
+# Perforce server info:
+#	2019/05/29 10:13:22 pid 86 completed .001s 0+0us 0+8io 0+0net 6204k 0pf 
+
+const P4DATE_RE /^\t(?P<date>\d+\/\d+\/\d+ \d+:\d+:\d+) /
+
+const CMD_START_RE // +
+    P4DATE_RE + /pid (?P<pid>\d+) (?P<user>\S+?)@(?P<workspace>\S+) / +
+    /(?P<ip>\S+)/
+
+const CMD_END_RE // +
+    P4DATE_RE + /pid (?P<pid>\d+) completed / +
+    /(?P<lapse>\S+)/
+
+// + CMD_START_RE {
+    strptime($date, "2006/01/02 15:04:05")
+
+    p4_cmds_start_time[$pid] = timestamp()
+    p4_cmds_started_total[$user][$workspace]++
+}
+    
+// + CMD_END_RE {
+    p4_cmds_completed_total++
+#     p4_cmd_lapse_time_total[$user][$workspace] += timestamp() - p4_cmds_start_time[$pid]
+#     del p4_cmds_start_time[$pid]
+#     p4_cmds_completed[$user][$workspace]++
+}
